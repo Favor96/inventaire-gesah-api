@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class InventaireImmobilisation extends Model
 {
@@ -23,6 +24,11 @@ class InventaireImmobilisation extends Model
         'date_inventaire' => 'datetime',
         'date_validation' => 'datetime',
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     public function entreprise()
     {

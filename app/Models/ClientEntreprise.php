@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ClientEntreprise extends Model
 {
@@ -18,7 +19,11 @@ class ClientEntreprise extends Model
         'email',
         'telephone',
     ];
-
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
     // Relation avec l'entreprise
     public function entreprise()
     {

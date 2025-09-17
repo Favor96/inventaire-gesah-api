@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class InventaireCaisse extends Model
 {
@@ -20,7 +21,14 @@ class InventaireCaisse extends Model
         'date_inventaire',
         'observations',
         'statut',
+        'date_fin',
+        'date_debut'
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     protected $casts = [
         'solde_theorique' => 'decimal:2',

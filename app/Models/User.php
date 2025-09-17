@@ -17,6 +17,7 @@ class User extends Authenticatable
         'password',
         'is_verified',
         'role',
+        'verification_code'
     ];
 
     protected $hidden = [
@@ -26,5 +27,26 @@ class User extends Authenticatable
     protected $casts = [
         'is_verified' => 'boolean',
     ];
+
+    public function administrateur()
+    {
+        return $this->hasOne(Administrateur::class, 'user_id');
+    }
+
+    // Relation avec le chef de mission (si ce user est un chef)
+    public function chefMission()
+    {
+        return $this->hasOne(ChefMission::class, 'user_id');
+    }
+
+    // Relation avec l'agent (si ce user est un agent)
+    public function agent()
+    {
+        return $this->hasOne(Agent::class, 'user_id');
+    }
+    public function entreprise()
+    {
+        return $this->hasOne(Entreprise::class, 'user_id');
+    }
 
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('mouvement_caisses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('inventaire_caisse_id')->constrained('inventaire_caisses')->onDelete('cascade');
-            $table->foreignId('client_id')->constrained('client_entreprises')->onDelete('cascade');
+            $table->foreignId('employe_id')->constrained('employe_entreprises')->onDelete('cascade');
             $table->enum('type_mouvement', ['entree', 'sortie']);
             $table->decimal('montant', 12, 2);
             $table->string('libelle')->nullable();

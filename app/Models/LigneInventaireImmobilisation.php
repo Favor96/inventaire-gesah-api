@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class LigneInventaireImmobilisation extends Model
 {
@@ -23,7 +24,11 @@ class LigneInventaireImmobilisation extends Model
         'valeur_estimee' => 'decimal:2',
         'present' => 'boolean',
     ];
-
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
     public function inventaire()
     {
         return $this->belongsTo(InventaireImmobilisation::class, 'inventaire_id');

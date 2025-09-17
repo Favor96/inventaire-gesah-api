@@ -4,13 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class Achat extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'inventaire_achat_id',
         'fournisseur_id',
         'employe_paye',
         'numero_facture',
@@ -31,9 +31,10 @@ class Achat extends Model
         'date_paiement' => 'datetime',
     ];
 
-    public function inventaire()
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
     {
-        return $this->belongsTo(InventaireAchat::class, 'inventaire_achat_id');
+        return Hashids::encode($this->id);
     }
 
     public function fournisseur()

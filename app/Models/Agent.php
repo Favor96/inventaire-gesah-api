@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Vinkla\Hashids\Facades\Hashids;
 
 class Agent extends User
 {
@@ -20,6 +21,11 @@ class Agent extends User
         'specialite',
         'actif',
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     // Scope global pour filtrer automatiquement par role
     protected static function booted()

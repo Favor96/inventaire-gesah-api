@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class Abonnement extends Model
 {
@@ -23,6 +24,11 @@ class Abonnement extends Model
     public function entreprise()
     {
         return $this->belongsTo(Entreprise::class);
+    }
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
     }
 
     // Relation vers le plan d'abonnement

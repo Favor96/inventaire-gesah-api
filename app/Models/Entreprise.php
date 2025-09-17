@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Vinkla\Hashids\Facades\Hashids;
 
 class Entreprise extends User
 {
@@ -20,6 +21,11 @@ class Entreprise extends User
         'date_creation',
         'statut',
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     // Relation avec les abonnements
     public function abonnements()

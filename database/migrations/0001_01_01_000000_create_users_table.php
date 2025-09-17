@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->boolean('is_verified')->default(false);
+            $table->string('verification_code')->nullable();
             $table->enum('role', ['client', 'agent', 'admin', 'chef_de_mission']);
             $table->rememberToken();
             $table->timestamps();

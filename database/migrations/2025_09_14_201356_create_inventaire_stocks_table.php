@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('numero_inventaire')->unique();
             $table->dateTime('date_inventaire');
             $table->enum('statut', ['en_cours', 'valide', 'annule'])->default('en_cours');
-            $table->text('observations')->nullable();
             $table->dateTime('date_validation')->nullable();
             $table->timestamps();
         });

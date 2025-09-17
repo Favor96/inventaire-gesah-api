@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class PaiementVente extends Model
 {
@@ -17,7 +18,11 @@ class PaiementVente extends Model
         'reference',
         'justificatif',
     ];
-
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
     protected $casts = [
         'date_paiement' => 'datetime',
         'montant' => 'decimal:2',

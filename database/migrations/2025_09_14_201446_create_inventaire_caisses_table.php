@@ -22,6 +22,8 @@ return new class extends Migration
             $table->decimal('ecart', 12, 2)->nullable();
             $table->dateTime('date_inventaire');
             $table->text('observations')->nullable();
+            $table->dateTime('date_debut'); // date et heure début comptage
+            $table->dateTime('date_fin');   // date et heure fin comptage
             $table->enum('statut', ['en_cours', 'valide', 'annule'])->default('en_cours');
             $table->timestamps();
         });

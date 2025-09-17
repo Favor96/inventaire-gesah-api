@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class Fournisseur extends Model
 {
@@ -22,6 +23,11 @@ class Fournisseur extends Model
     protected $casts = [
         'date_creation' => 'datetime',
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     // Relation vers l'entreprise
     public function entreprise()

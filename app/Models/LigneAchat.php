@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class LigneAchat extends Model
 {
@@ -22,6 +23,11 @@ class LigneAchat extends Model
         'prix_unitaire' => 'decimal:2',
         'montant_ligne' => 'decimal:2',
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     public function achat()
     {

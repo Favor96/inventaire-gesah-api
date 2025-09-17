@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ChefMission extends User
 {
@@ -19,7 +20,11 @@ class ChefMission extends User
         'actif',
         'date_embauche',
     ];
-
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
     // Scope global pour filtrer automatiquement par role
     protected static function booted()
     {

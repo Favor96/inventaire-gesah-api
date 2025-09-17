@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Vinkla\Hashids\Facades\Hashids;
 
 class DetentionImmo extends Model
 {
@@ -21,7 +22,11 @@ class DetentionImmo extends Model
         'date_debut' => 'datetime',
         'date_fin' => 'datetime',
     ];
-
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
     public function immobilisation()
     {
         return $this->belongsTo(Immobilisation::class);
@@ -29,6 +34,6 @@ class DetentionImmo extends Model
 
     public function employe()
     {
-        return $this->belongsTo(EmployeEntreprise::class, 'client_id');
+        return $this->belongsTo(EmployeEntreprise::class, 'employe_id');
     }
 }

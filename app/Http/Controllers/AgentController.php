@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use App\Models\User;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -25,12 +26,10 @@ class AgentController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'chef_id' => 'required|exists:chef_missions,id',
                 'nom' => 'required|string|max:255',
                 'prenom' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email',
                 'telephone' => 'required|string|max:20',
-                'specialite' => 'required|string|max:255',
                 'password' => 'required|string|min:6',
                 'actif' => 'required|boolean',
             ]);
@@ -51,7 +50,7 @@ class AgentController extends Controller
 
             $agent = Agent::create([
                 'user_id' => $user->id,
-                'chef_id' => $request->chef_id,
+                'chef_id' => auth()->user()->chef->id,
                 'nom' => $request->nom,
                 'prenom' => $request->prenom,
                 'email' => $request->email,
@@ -97,7 +96,6 @@ class AgentController extends Controller
             $id = $ids[0];
 
             $validator = Validator::make($request->all(), [
-                'chef_id' => 'sometimes|required|exists:chef_missions,id',
                 'nom' => 'sometimes|required|string|max:255',
                 'prenom' => 'sometimes|required|string|max:255',
                 'email' => 'sometimes|required|email|unique:users,email,' . $id,

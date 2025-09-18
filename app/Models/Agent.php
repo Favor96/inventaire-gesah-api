@@ -32,4 +32,9 @@ class Agent extends User
     {
         return $this->belongsTo(ChefMission::class, 'chef_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

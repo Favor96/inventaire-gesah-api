@@ -145,17 +145,29 @@ class AdministrateurController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $hashid)
     {
         try {
-            $admin = Administrateur::find($id);
+            // Décoder le hashid pour obtenir l'id réel
+            $id = FacadesHashids::decode($hashid);
+
+            if (empty($id)) {
+                return response()->json(['message' => 'Identifiant invalide'], 400);
+            }
+
+            // $id est un tableau retourné par decode(), on prend le premier élément
+            $admin = Administrateur::find($id[0]);
+
             if (!$admin) {
                 return response()->json(['message' => 'Administrateur non trouvé'], 404);
             }
+
             // Supprime le user associé
             $admin->user()->delete();
+
             // Supprime l'administrateur
             $admin->delete();
+
             return response()->json(['message' => 'Administrateur supprimé avec succès']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);

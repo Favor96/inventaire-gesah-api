@@ -17,6 +17,12 @@ class Administrateur extends User
         'email',
     ];
     protected $appends = ['hashid'];
+    protected $hidden = ['id','user_id'];
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function getHashidAttribute()
     {
         return FacadesHashids::encode($this->id);

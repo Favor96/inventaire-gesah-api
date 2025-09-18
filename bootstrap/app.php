@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         'admin.auth' => \App\Http\Middleware\AdminMiddleware::class, // Alias du middleware admin
         'account.verified' => \App\Http\Middleware\AcountVerifed::class, // Alias du middleware admin
         'chef.auth' => \App\Http\Middleware\ChefMiddleware::class, // Alias du middleware chef
+        'agent.auth' => \App\Http\Middleware\AgentMiddleware::class, // Alias du middleware agent
     ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

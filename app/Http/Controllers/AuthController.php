@@ -14,9 +14,14 @@ class AuthController extends Controller
 
             if (Auth::attempt($credentials)) {
                 $user = Auth::user();
+                // Générer un token d'authentification (exemple via Sanctum)
+                $token = $user->createToken('auth_token')->plainTextToken;
+
                 return response()->json([
                     'message' => 'Connexion réussie.',
                     'user' => $user,
+                    'access_token' => 'Bearer ' . $token,
+                    'token_type' => 'Bearer',
                 ]);
             }
 
@@ -25,6 +30,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function logout(Request $request)
     {

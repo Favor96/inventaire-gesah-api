@@ -60,7 +60,6 @@ class ChefMissionController extends Controller
                 'telephone' => $request->telephone,
                 'poste' => $request->poste,
                 'actif' => $request->actif,
-                'date_embauche' => $request->date_embauche,
             ]);
 
             $chef = ChefMission::with(['administrateur', 'agents'])->find($chef->id);
@@ -80,7 +79,7 @@ class ChefMissionController extends Controller
             }
             $id = $ids[0];
 
-            $chef = ChefMission::with(['administrateur', 'agents'])->find($id);
+            $chef = ChefMission::with(['administrateur', 'agents','user'])->find($id);
             if (!$chef) {
                 return response()->json(['message' => 'Chef de mission non trouvé'], 404);
             }
@@ -124,21 +123,23 @@ class ChefMissionController extends Controller
             }
 
             $chef->update($request->only([
-                'administrateur_id', 'nom', 'prenom', 'email', 'telephone', 'poste', 'actif', 'date_embauche'
+                'administrateur_id', 'nom', 'prenom', 'email', 'telephone', 'poste', 'actif'
             ]));
 
             // Mise à jour du user associé si email ou password changent
             $user = $chef->user;
-            if ($request->has('email')) {
-                $user->email = $request->email;
+            if ($user) {
+                if ($request->has('email')) {
+                    $user->email = $request->email;
+                }
+                if ($request->has('password')) {
+                    $user->password = Hash::make($request->password);
+                }
+                $user->save();
             }
-            if ($request->has('password')) {
-                $user->password = Hash::make($request->password);
-            }
-            $user->save();
 
-            $chef = ChefMission::with(['administrateur', 'agents'])->find($chef->id);
 
+            $chef->load(['user', 'agents']);
             return response()->json(['message' => 'Chef de mission mis à jour', 'chef' => $chef], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);

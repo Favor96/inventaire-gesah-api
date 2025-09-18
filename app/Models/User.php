@@ -6,11 +6,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Vinkla\Hashids\Facades\Hashids;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
 
     protected $fillable = [
         'email',
@@ -22,10 +24,17 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'id'
     ];
+    protected $appends = ['hashid'];
+    public function getHashidAttribute()
+    {
+        return Hashids::encode($this->id);
+    }
 
     protected $casts = [
-        'is_verified' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function administrateur()
@@ -34,7 +43,7 @@ class User extends Authenticatable
     }
 
     // Relation avec le chef de mission (si ce user est un chef)
-    public function chefMission()
+    public function chef()
     {
         return $this->hasOne(ChefMission::class, 'user_id');
     }

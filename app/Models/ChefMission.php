@@ -21,27 +21,26 @@ class ChefMission extends User
         'date_embauche',
     ];
     protected $appends = ['hashid'];
+    protected $hidden = ['user_id','administrateur_id'];
     public function getHashidAttribute()
     {
         return Hashids::encode($this->id);
     }
-    // Scope global pour filtrer automatiquement par role
-    protected static function booted()
+
+
+    public function user()
     {
-        static::addGlobalScope('role', function ($query) {
-            $query->where('role', 'chef_de_mission');
-        });
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relation avec l'admin qui gère le chef
     public function administrateur()
     {
-        return $this->belongsTo(Administrateur::class);
+        return $this->belongsTo(Administrateur::class, 'administrateur_id');
     }
-
     // Relation avec les agents gérés par ce chef
     public function agents()
     {
         return $this->hasMany(Agent::class, 'chef_id');
     }
+
 }

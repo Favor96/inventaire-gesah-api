@@ -27,14 +27,6 @@ class Agent extends User
         return Hashids::encode($this->id);
     }
 
-    // Scope global pour filtrer automatiquement par role
-    protected static function booted()
-    {
-        static::addGlobalScope('role', function ($query) {
-            $query->where('role', 'agent');
-        });
-    }
-
     // Relation avec le chef de mission
     public function chef()
     {

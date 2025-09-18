@@ -17,6 +17,7 @@ class PlanAbonnement extends Model
         'montant',
     ];
     protected $appends = ['hashid'];
+    protected $hidden = ['id'];
     public function getHashidAttribute()
     {
         return Hashids::encode($this->id);
@@ -25,6 +26,6 @@ class PlanAbonnement extends Model
     // Relation avec les abonnements
     public function abonnements()
     {
-        return $this->hasMany(Abonnement::class);
+        return $this->hasMany(Abonnement::class, 'plan_id');
     }
 }

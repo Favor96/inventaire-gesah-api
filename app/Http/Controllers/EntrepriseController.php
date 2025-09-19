@@ -15,7 +15,7 @@ class EntrepriseController extends Controller
     public function index()
     {
         try {
-            $entreprises = Entreprise::with(['abonnements', 'employeEntreprises'])->get();
+            $entreprises = Entreprise::with(['user','abonnements', 'employeEntreprises'])->get();
             return response()->json(['entreprises' => $entreprises], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
@@ -33,7 +33,6 @@ class EntrepriseController extends Controller
                 'email' => 'required|email|unique:users,email',
                 'password' => 'required|string|min:6',
                 'date_creation' => 'required|date',
-                'statut' => 'required|string|max:50',
             ]);
 
             if ($validator->fails()) {
@@ -61,7 +60,6 @@ class EntrepriseController extends Controller
                 'adresse' => $request->adresse,
                 'telephone' => $request->telephone,
                 'email' => $request->email,
-                'statut' => $request->statut,
             ]);
 
             // Envoi du code de vérification par mail
@@ -87,7 +85,7 @@ class EntrepriseController extends Controller
             }
             $id = $ids[0];
 
-            $entreprise = Entreprise::with(['abonnements', 'employeEntreprises'])->find($id);
+            $entreprise = Entreprise::with(['user','abonnements', 'employeEntreprises'])->find($id);
             if (!$entreprise) {
                 return response()->json(['message' => 'Entreprise non trouvée'], 404);
             }

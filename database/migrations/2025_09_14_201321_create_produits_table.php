@@ -18,9 +18,6 @@ return new class extends Migration
             $table->string('nom');
             $table->text('description')->nullable();
             $table->string('code_produit')->unique();
-            $table->decimal('prix_unitaire', 10, 2);
-            $table->integer('stock_minimum')->default(0);
-            $table->integer('stock_actuel')->default(0);
             $table->string('unite_mesure')->nullable();
             $table->timestamps();
         });

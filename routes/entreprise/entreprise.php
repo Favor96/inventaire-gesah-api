@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AbonnementController;
 use App\Http\Controllers\AchatController;
+use App\Http\Controllers\CategorieProduitController;
 use App\Http\Controllers\ClientEntrepriseController;
 use App\Http\Controllers\EmployeEntrepriseController;
 use Illuminate\Support\Facades\Route;
@@ -12,11 +13,13 @@ use App\Http\Controllers\ProduitController;
 use App\Http\Controllers\VenteController;
 use App\Models\Caisse;
 
-Route::prefix('entreprise')->middleware(['auth'])->group(function () {
-    Route::apiResource('', EntrepriseController::class)->parameters([
-        'entreprises' => 'hashid'
-    ]);
-    Route::post('/verify', [EntrepriseController::class, 'verify']);
+
+
+Route::prefix('entreprise')->middleware(['auth:sanctum'])->group(function () {
+    Route::apiResource('/client', EntrepriseController::class)->parameters([
+        '/client' => 'hashid'
+    ])
+        ->except(['index','store']);
     Route::apiResource('produits', ProduitController::class)->parameters([
         'produits' => 'hashid'
     ]);
@@ -44,4 +47,10 @@ Route::prefix('entreprise')->middleware(['auth'])->group(function () {
     Route::apiResource('caisse', Caisse::class)->parameters([
         'caisse' => 'hashid'
     ]);
+    Route::apiResource('categorie-prod', CategorieProduitController::class)->parameters([
+        'categorie-prod' => 'hashid'
+    ]);
 });
+
+Route::post('entreprise/create', [EntrepriseController::class, 'store']);
+Route::post('entreprise/verify', [EntrepriseController::class, 'verify']);

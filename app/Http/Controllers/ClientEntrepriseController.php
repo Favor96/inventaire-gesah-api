@@ -23,7 +23,6 @@ class ClientEntrepriseController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'required|exists:entreprises,id',
                 'nom' => 'required|string|max:255',
                 'prenom' => 'required|string|max:255',
                 'email' => 'required|email|max:255',
@@ -37,7 +36,16 @@ class ClientEntrepriseController extends Controller
                 ], 422);
             }
 
-            $client = ClientEntreprise::create($request->all());
+            // Récupérer entreprise_id depuis utilisateur connecté
+            $entrepriseId = auth()->user()->entreprise->id ?? null;
+            if (!$entrepriseId) {
+                return response()->json(['message' => 'Entreprise introuvable pour utilisateur connecté'], 403);
+            }
+
+            $client = ClientEntreprise::create(array_merge($request->all(), [
+                'entreprise_id' => $entrepriseId,
+            ]));
+
             $client = ClientEntreprise::with('entreprise')->find($client->id);
 
             return response()->json(['message' => 'Client créé avec succès', 'client' => $client], 201);
@@ -75,7 +83,6 @@ class ClientEntrepriseController extends Controller
             $id = $ids[0];
 
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'sometimes|required|exists:entreprises,id',
                 'nom' => 'sometimes|required|string|max:255',
                 'prenom' => 'sometimes|required|string|max:255',
                 'email' => 'sometimes|required|email|max:255',

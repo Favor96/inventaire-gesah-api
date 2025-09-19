@@ -1,4 +1,4 @@
-<?php
+<?Php
 
 namespace App\Http\Controllers;
 
@@ -12,27 +12,37 @@ class ProduitController extends Controller
     public function index()
     {
         try {
-            $produits = Produit::with(['entreprise', 'categorie', 'lignesVente', 'lignesAchat'])->get();
+            $produits = Produit::with([
+                'entreprise',
+                'categorie',
+                'lignesVente',
+                'lignesAchat',
+                'packages' // charger les packages associés
+            ])->get();
+
             return response()->json(['produits' => $produits], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
 
+
     public function store(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'required|exists:entreprises,id',
                 'categorie_id' => 'required|exists:categorie_produits,id',
                 'nom' => 'required|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'code_produit' => 'required|string|max:50|unique:produits,code_produit',
                 'prix_unitaire' => 'required|numeric|min:0',
-                'stock_minimum' => 'required|integer|min:0',
-                'stock_actuel' => 'required|integer|min:0',
                 'unite_mesure' => 'required|string|max:50',
-                'date_creation' => 'required|date',
+                'packages' => 'nullable|array',
+                'packages.*.unite_mesure' => 'required_with:packages|string|max:50',
+                'packages.*.prix' => 'required_with:packages|numeric|min:0',
+                'packages.*.stock_minimum' => 'sometimes|integer|min:0',
+                'packages.*.stock_actuel' => 'sometimes|integer|min:0',
+                'packages.*.description' => 'nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -42,14 +52,38 @@ class ProduitController extends Controller
                 ], 422);
             }
 
-            $produit = Produit::create($request->all());
-            $produit = Produit::with(['entreprise', 'categorie', 'lignesVente', 'lignesAchat'])->find($produit->id);
+            $entrepriseId = auth()->user()->entreprise->id ?? null;
+            if (!$entrepriseId) {
+                return response()->json(['message' => 'Entreprise introuvable pour utilisateur connecté'], 403);
+            }
+
+            $produit = Produit::create(array_merge($request->only([
+                'categorie_id',
+                'nom',
+                'description',
+                'code_produit',
+                'prix_unitaire',
+                'unite_mesure',
+                'date_creation',
+            ]), [
+                'entreprise_id' => $entrepriseId,
+            ]));
+
+            // Création des packages si fournis
+            if ($request->has('packages')) {
+                foreach ($request->packages as $package) {
+                    $produit->packages()->create($package);
+                }
+            }
+
+            $produit->load(['entreprise', 'categorie', 'lignesVente', 'lignesAchat', 'packages']);
 
             return response()->json(['message' => 'Produit créé avec succès', 'produit' => $produit], 201);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function show(string $hashid)
     {
@@ -60,7 +94,14 @@ class ProduitController extends Controller
             }
             $id = $ids[0];
 
-            $produit = Produit::with(['entreprise', 'categorie', 'lignesVente', 'lignesAchat'])->find($id);
+            $produit = Produit::with([
+                'entreprise',
+                'categorie',
+                'lignesVente',
+                'lignesAchat',
+                'packages'
+            ])->find($id);
+
             if (!$produit) {
                 return response()->json(['message' => 'Produit non trouvé'], 404);
             }
@@ -69,6 +110,7 @@ class ProduitController extends Controller
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function update(Request $request, string $hashid)
     {
@@ -80,16 +122,20 @@ class ProduitController extends Controller
             $id = $ids[0];
 
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'sometimes|required|exists:entreprises,id',
                 'categorie_id' => 'sometimes|required|exists:categorie_produits,id',
                 'nom' => 'sometimes|required|string|max:255',
                 'description' => 'nullable|string|max:1000',
                 'code_produit' => 'sometimes|required|string|max:50|unique:produits,code_produit,' . $id,
                 'prix_unitaire' => 'sometimes|required|numeric|min:0',
-                'stock_minimum' => 'sometimes|required|integer|min:0',
-                'stock_actuel' => 'sometimes|required|integer|min:0',
                 'unite_mesure' => 'sometimes|required|string|max:50',
                 'date_creation' => 'sometimes|required|date',
+                'packages' => 'nullable|array',
+                'packages.*.id' => 'sometimes|exists:produit_packages,id',
+                'packages.*.unite_mesure' => 'required_with:packages|string|max:50',
+                'packages.*.prix' => 'required_with:packages|numeric|min:0',
+                'packages.*.stock_minimum' => 'sometimes|integer|min:0',
+                'packages.*.stock_actuel' => 'sometimes|integer|min:0',
+                'packages.*.description' => 'nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -104,14 +150,40 @@ class ProduitController extends Controller
                 return response()->json(['message' => 'Produit non trouvé'], 404);
             }
 
-            $produit->update($request->all());
-            $produit = Produit::with(['entreprise', 'categorie', 'lignesVente', 'lignesAchat'])->find($produit->id);
+            $produit->update($request->only([
+                'categorie_id',
+                'nom',
+                'description',
+                'code_produit',
+                'prix_unitaire',
+                'unite_mesure',
+                'date_creation'
+            ]));
+
+            // Gestion des packages (création et mise à jour)
+            if ($request->has('packages')) {
+                foreach ($request->packages as $packageData) {
+                    if (isset($packageData['id'])) {
+                        // mise à jour package existant
+                        $produitPackage = $produit->packages()->find($packageData['id']);
+                        if ($produitPackage) {
+                            $produitPackage->update($packageData);
+                        }
+                    } else {
+                        // création nouveau package
+                        $produit->packages()->create($packageData);
+                    }
+                }
+            }
+
+            $produit->load(['entreprise', 'categorie', 'lignesVente', 'lignesAchat', 'packages']);
 
             return response()->json(['message' => 'Produit mis à jour', 'produit' => $produit], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function destroy(string $hashid)
     {

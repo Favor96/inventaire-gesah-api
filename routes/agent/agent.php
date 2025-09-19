@@ -15,4 +15,5 @@ Route::prefix('agents')->middleware(['auth:sanctum','agent.auth'])->group(functi
     Route::apiResource('inventaire-immo', InventaireImmobilisationController::class)->parameters([
         'inventaire-immo' => 'hashid'
     ]);
+    
 });

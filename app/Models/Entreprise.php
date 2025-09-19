@@ -32,6 +32,10 @@ class Entreprise extends User
     {
         return $this->hasMany(Abonnement::class);
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     // Relation avec les employés
     public function employeEntreprises()
@@ -39,11 +43,4 @@ class Entreprise extends User
         return $this->hasMany(EmployeEntreprise::class);
     }
 
-    // Scope global pour filtrer uniquement les entreprises
-    protected static function booted()
-    {
-        static::addGlobalScope('role', function ($query) {
-            $query->where('role', 'client');
-        });
-    }
 }

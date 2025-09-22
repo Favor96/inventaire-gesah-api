@@ -19,6 +19,8 @@ class LigneVente extends Model
         'quantite',
         'prix_unitaire',
         'montant_ligne',
+        'statut',
+        'package_id',
     ];
 
     protected $casts = [
@@ -31,6 +33,10 @@ class LigneVente extends Model
     public function vente()
     {
         return $this->belongsTo(Vente::class);
+    }
+    public function package()
+    {
+        return $this->belongsTo(ProduitPackage::class, 'package_id');
     }
     protected $appends = ['hashid'];
     public function getHashidAttribute()

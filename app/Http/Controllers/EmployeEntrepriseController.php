@@ -26,9 +26,8 @@ class EmployeEntrepriseController extends Controller
                 'nom' => 'required|string|max:255',
                 'prenom' => 'required|string|max:255',
                 'poste' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
+                'email' => 'required|email|max:255|unique:employe_entreprises,email',
                 'telephone' => 'required|string|max:20',
-                'date_creation' => 'required|date',
             ]);
 
             if ($validator->fails()) {
@@ -52,7 +51,6 @@ class EmployeEntrepriseController extends Controller
                 'poste' => $request->poste,
                 'email' => $request->email,
                 'telephone' => $request->telephone,
-                'date_creation' => $request->date_creation,
             ]);
             $employe = EmployeEntreprise::with('entreprise')->find($employe->id);
 
@@ -94,7 +92,7 @@ class EmployeEntrepriseController extends Controller
                 'nom' => 'sometimes|required|string|max:255',
                 'prenom' => 'sometimes|required|string|max:255',
                 'poste' => 'sometimes|required|string|max:255',
-                'email' => 'sometimes|required|email|max:255',
+                'email' => 'sometimes|required|email|max:255|unique:employe_entreprises,email,' . $id,
                 'telephone' => 'sometimes|required|string|max:20',
                 'date_creation' => 'sometimes|required|date',
             ]);

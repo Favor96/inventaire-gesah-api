@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AbonnementController;
 use App\Http\Controllers\AchatController;
+use App\Http\Controllers\CaisseController;
 use App\Http\Controllers\CategorieProduitController;
 use App\Http\Controllers\ClientEntrepriseController;
 use App\Http\Controllers\EmployeEntrepriseController;
@@ -44,7 +45,7 @@ Route::prefix('entreprise')->middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('abonement', AbonnementController::class)->parameters([
         'abonement' => 'hashid'
     ]);
-    Route::apiResource('caisse', Caisse::class)->parameters([
+    Route::apiResource('caisse', CaisseController::class)->parameters([
         'caisse' => 'hashid'
     ]);
     Route::apiResource('categorie-prod', CategorieProduitController::class)->parameters([

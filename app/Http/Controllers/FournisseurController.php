@@ -26,9 +26,8 @@ class FournisseurController extends Controller
                 'nom' => 'required|string|max:255',
                 'adresse' => 'required|string|max:255',
                 'telephone' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
-                'numero_fiscal' => 'required|string|max:100',
-                'date_creation' => 'required|date',
+                'email' => 'required|email|max:255|unique:fournisseurs,email',
+                'numero_fiscal' => 'nullable|string|max:100',            
             ]);
 
             if ($validator->fails()) {
@@ -52,7 +51,6 @@ class FournisseurController extends Controller
                 'telephone' => $request->telephone,
                 'email' => $request->email,
                 'numero_fiscal' => $request->numero_fiscal,
-                'date_creation' => $request->date_creation,
             ]);
             $fournisseur = Fournisseur::with(['entreprise', 'achats'])->find($fournisseur->id);
 
@@ -95,9 +93,8 @@ class FournisseurController extends Controller
                 'nom' => 'sometimes|required|string|max:255',
                 'adresse' => 'sometimes|required|string|max:255',
                 'telephone' => 'sometimes|required|string|max:20',
-                'email' => 'sometimes|required|email|max:255',
+                'email' => 'sometimes|required|email|max:255|unique:fournisseurs,email,' . $id,
                 'numero_fiscal' => 'sometimes|required|string|max:100',
-                'date_creation' => 'sometimes|required|date',
             ]);
 
             if ($validator->fails()) {

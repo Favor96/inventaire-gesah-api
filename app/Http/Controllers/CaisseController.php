@@ -29,7 +29,6 @@ class CaisseController extends Controller
                 'type_caisse' => 'required|string|max:50',
                 'solde_initial' => 'required|numeric|min:0',
                 'solde_actuel' => 'required|numeric|min:0',
-                'date_creation' => 'required|date',
             ]);
 
             if ($validator->fails()) {
@@ -44,7 +43,6 @@ class CaisseController extends Controller
                 'type_caisse' => $request->type_caisse,
                 'solde_initial' => $request->solde_initial,
                 'solde_actuel' => $request->solde_actuel,
-                'date_creation' => $request->date_creation,
             ]);
 
             return response()->json(['message' => 'Caisse créée', 'caisse' => $caisse->load('inventaires')], 201);
@@ -84,14 +82,13 @@ class CaisseController extends Controller
                 'type_caisse' => 'sometimes|required|string|max:50',
                 'solde_initial' => 'sometimes|required|numeric|min:0',
                 'solde_actuel' => 'sometimes|required|numeric|min:0',
-                'date_creation' => 'sometimes|required|date',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['message' => 'Erreur de validation', 'errors' => $validator->errors()], 422);
             }
 
-            $caisse->update($request->only(['nom_caisse', 'type_caisse', 'solde_initial', 'solde_actuel', 'date_creation']));
+            $caisse->update($request->only(['nom_caisse', 'type_caisse', 'solde_initial', 'solde_actuel']));
 
             return response()->json(['message' => 'Caisse mise à jour', 'caisse' => $caisse->load('inventaires')], 200);
         } catch (\Exception $e) {

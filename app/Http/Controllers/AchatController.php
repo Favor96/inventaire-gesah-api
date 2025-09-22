@@ -13,7 +13,7 @@ class AchatController extends Controller
     public function index()
     {
         try {
-            $achats = Achat::with(['inventaire', 'fournisseur', 'employe', 'lignes'])->get();
+            $achats = Achat::with(['fournisseur', 'employe', 'lignes'])->get();
             return response()->json(['achats' => $achats], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
@@ -26,7 +26,7 @@ class AchatController extends Controller
             $validator = Validator::make($request->all(), [
                 'fournisseur_id' => 'required|exists:fournisseurs,id',
                 'employe_paye' => 'required|exists:employe_entreprises,id',
-                'numero_facture' => 'required|string|max:100',
+                'numero_facture' => 'required|string|max:100|unique:achats,numero_facture',
                 'montant_ht' => 'required|numeric|min:0',
                 'montant_tva' => 'required|numeric|min:0',
                 'montant_ttc' => 'required|numeric|min:0',
@@ -37,7 +37,7 @@ class AchatController extends Controller
 
                 // Validation des lignes d’achat
                 'lignes' => 'required|array|min:1',
-                'lignes.*.produit_id' => 'required|exists:produits,id',
+                'lignes.*.package_id' => 'required|exists:produit_packages,id',
                 'lignes.*.quantite' => 'required|integer|min:1',
                 'lignes.*.prix_unitaire' => 'required|numeric|min:0',
                 'lignes.*.montant_ligne' => 'required|numeric|min:0',
@@ -77,7 +77,7 @@ class AchatController extends Controller
             }
 
             // Charger toutes les relations
-            $achat = Achat::with(['inventaire', 'fournisseur', 'employe', 'lignes.produit'])->find($achat->id);
+            $achat = Achat::with([ 'fournisseur', 'employe', 'lignes.package'])->find($achat->id);
 
             return response()->json(['message' => 'Achat créé avec succès', 'achat' => $achat], 201);
         } catch (\Exception $e) {
@@ -95,7 +95,7 @@ class AchatController extends Controller
             }
             $id = $ids[0];
 
-            $achat = Achat::with(['inventaire', 'fournisseur', 'employe', 'lignes'])->find($id);
+            $achat = Achat::with(['fournisseur', 'employe', 'lignes'])->find($id);
             if (!$achat) {
                 return response()->json(['message' => 'Achat non trouvé'], 404);
             }
@@ -117,7 +117,7 @@ class AchatController extends Controller
             $validator = Validator::make($request->all(), [
                 'fournisseur_id' => 'sometimes|required|exists:fournisseurs,id',
                 'employe_paye' => 'sometimes|required|exists:employe_entreprises,id',
-                'numero_facture' => 'sometimes|required|string|max:100',
+                'numero_facture' => 'sometimes|required|string|max:100|unique:achats,numero_facture,' . $id,
                 'montant_ht' => 'sometimes|required|numeric|min:0',
                 'montant_tva' => 'sometimes|required|numeric|min:0',
                 'montant_ttc' => 'sometimes|required|numeric|min:0',
@@ -129,7 +129,7 @@ class AchatController extends Controller
                 // Validation des lignes d’achat
                 'lignes' => 'nullable|array',
                 'lignes.*.hashid' => 'nullable|string',
-                'lignes.*.produit_id' => 'required|exists:produits,id',
+                'lignes.*.package_id' => 'required|exists:produit_packages,id',
                 'lignes.*.quantite' => 'required|integer|min:1',
                 'lignes.*.prix_unitaire' => 'required|numeric|min:0',
                 'lignes.*.montant_ligne' => 'required|numeric|min:0',
@@ -183,7 +183,7 @@ class AchatController extends Controller
                             $ligneAchat = \App\Models\LigneAchat::where('achat_id', $achat->id)->find($ligneId);
                             if ($ligneAchat) {
                                 $ligneAchat->update([
-                                    'produit_id' => $ligne['produit_id'],
+                                    'package_id' => $ligne['package_id'],
                                     'quantite' => $ligne['quantite'],
                                     'prix_unitaire' => $ligne['prix_unitaire'],
                                     'montant_ligne' => $ligne['montant_ligne'],
@@ -195,7 +195,7 @@ class AchatController extends Controller
                         // Création
                         $newLigne = \App\Models\LigneAchat::create([
                             'achat_id' => $achat->id,
-                            'produit_id' => $ligne['produit_id'],
+                            'package_id' => $ligne['package_id'],
                             'quantite' => $ligne['quantite'],
                             'prix_unitaire' => $ligne['prix_unitaire'],
                             'montant_ligne' => $ligne['montant_ligne'],
@@ -210,7 +210,7 @@ class AchatController extends Controller
                     ->delete();
             }
 
-            $achat = Achat::with(['inventaire', 'fournisseur', 'employe', 'lignes'])->find($achat->id);
+            $achat = Achat::with([ 'fournisseur', 'employe', 'lignes'])->find($achat->id);
 
             return response()->json(['message' => 'Achat mis à jour', 'achat' => $achat], 200);
         } catch (\Exception $e) {

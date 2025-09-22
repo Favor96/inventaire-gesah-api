@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('ligne_achats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('achat_id')->constrained('achats')->onDelete('cascade');
-            $table->foreignId('produit_id')->constrained('produits')->onDelete('cascade');
+            $table->foreignId('package_id')->constrained('produit_packages')->onDelete('cascade');
             $table->integer('quantite');
             $table->decimal('prix_unitaire', 10, 2);
             $table->decimal('montant_ligne', 12, 2);

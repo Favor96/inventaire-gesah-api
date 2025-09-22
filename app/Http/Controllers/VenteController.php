@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Vente;
 use App\Models\LigneVente;
 use App\Models\Produit;
+use App\Models\ProduitPackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Vinkla\Hashids\Facades\Hashids;
@@ -29,50 +30,70 @@ class VenteController extends Controller
                 'date_vente' => 'required|date',
                 'statut' => 'required|in:en_attente,payee,annule',
                 'lignes' => 'required|array|min:1',
-                'lignes.*.produit_id' => 'required|exists:produits,id',
+                'lignes.*.package_id' => 'required|exists:produit_packages,id',
                 'lignes.*.quantite' => 'required|integer|min:1',
-                'lignes.*.prix_unitaire' => 'required|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['message' => 'Erreur de validation', 'errors' => $validator->errors()], 422);
+                return response()->json([
+                    'message' => 'Erreur de validation',
+                    'errors' => $validator->errors()
+                ], 422);
             }
 
-            // Calcul du total
             $total = 0;
+            $alertes = [];
+
+            // Vérification stock avant création
             foreach ($request->lignes as $ligne) {
-                $total += $ligne['quantite'] * $ligne['prix_unitaire'];
+                $package = ProduitPackage::find($ligne['package_id']);
+                if (!$package) continue;
+
+                if ($ligne['quantite'] > $package->stock_actuel) {
+                    $alertes[] = "Le package {$package->id} ({$package->produit->nom}) ne dispose pas de quantité suffisante pour cette vente.";
+                }
+            }
+
+            if (!empty($alertes)) {
+                return response()->json([
+                    'message' => 'Quantité supérieure au stock disponible',
+                    'alertes' => $alertes
+                ], 422);
             }
 
             // Création de la vente
             $vente = Vente::create([
                 'client_id' => $request->client_id,
                 'date_vente' => $request->date_vente,
-                'total' => $total,
+                'total' => 0,
                 'statut' => $request->statut,
             ]);
 
-            // Création des lignes de vente
             foreach ($request->lignes as $ligne) {
+                $package = ProduitPackage::find($ligne['package_id']);
+                if (!$package) continue;
+
+                $montant_ligne = $ligne['quantite'] * $package->prix;
+
                 LigneVente::create([
                     'vente_id' => $vente->id,
-                    'produit_id' => $ligne['produit_id'],
+                    'produit_id' => $package->produit_id,
+                    'package_id' => $package->id,
                     'quantite' => $ligne['quantite'],
-                    'prix_unitaire' => $ligne['prix_unitaire'],
+                    'prix_unitaire' => $package->prix,
+                    'montant_ligne' => $montant_ligne,
                 ]);
-            }
 
-            // Si statut = payee, diminuer le stock
-            if ($request->statut === 'payee') {
-                foreach ($request->lignes as $ligne) {
-                    $produit = Produit::find($ligne['produit_id']);
-                    if ($produit) {
-                        $produit->stock_actuel -= $ligne['quantite'];
-                        if ($produit->stock_actuel < 0) $produit->stock_actuel = 0;
-                        $produit->save();
-                    }
+                $total += $montant_ligne;
+
+                // Diminuer le stock si statut payee
+                if ($request->statut === 'payee') {
+                    $package->stock_actuel -= $ligne['quantite'];
+                    $package->save();
                 }
             }
+
+            $vente->update(['total' => $total]);
 
             $vente = Vente::with(['client', 'lignesVente'])->find($vente->id);
 
@@ -81,6 +102,8 @@ class VenteController extends Controller
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
+
+
 
     public function show(string $hashid)
     {
@@ -111,58 +134,102 @@ class VenteController extends Controller
                 'date_vente' => 'sometimes|date',
                 'statut' => 'sometimes|in:en_attente,payee,annule',
                 'lignes' => 'nullable|array|min:1',
-                'lignes.*.produit_id' => 'required_with:lignes|exists:produits,id',
+                'lignes.*.package_id' => 'required_with:lignes|exists:produit_packages,id',
                 'lignes.*.quantite' => 'required_with:lignes|integer|min:1',
-                'lignes.*.prix_unitaire' => 'required_with:lignes|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['message' => 'Erreur de validation', 'errors' => $validator->errors()], 422);
             }
 
-            // Gestion du changement de statut pour le stock
             $ancien_statut = $vente->statut;
             $nouveau_statut = $request->statut ?? $ancien_statut;
 
-            // Restaurer stock si l'ancien statut était payee et nouveau n'est pas payee
-            if ($ancien_statut === 'payee' && $nouveau_statut !== 'payee') {
-                foreach ($vente->lignesVente as $ligne) {
-                    $produit = Produit::find($ligne->produit_id);
-                    if ($produit) {
-                        $produit->stock_actuel += $ligne->quantite;
-                        $produit->save();
+
+            $alertes = [];
+
+            // Vérification du stock si lignes fournies
+            if ($request->has('lignes')) {
+                foreach ($request->lignes as $ligne) {
+                    $package = ProduitPackage::find($ligne['package_id']);
+                    if (!$package) continue;
+
+                    $quantite_disponible = $package->stock_actuel;
+                    $ancienne_quantite = $vente->lignesVente->where('package_id', $package->id)->sum('quantite');
+                    if ($ligne['quantite'] > $quantite_disponible + $ancienne_quantite) {
+                        $alertes[] = "Le package {$package->id} ({$package->produit->nom}) ne dispose pas de quantité suffisante pour cette vente.";
                     }
+                }
+
+                if (!empty($alertes)) {
+                    return response()->json([
+                        'message' => 'Quantité supérieure au stock disponible',
+                        'alertes' => $alertes
+                    ], 422);
                 }
             }
 
-            // Si le nouveau statut est payee et ancien n'était pas payee, diminuer le stock
-            if ($ancien_statut !== 'payee' && $nouveau_statut === 'payee') {
-                foreach ($request->lignes ?? $vente->lignesVente->toArray() as $ligne) {
-                    $produit = Produit::find($ligne['produit_id']);
-                    if ($produit) {
-                        $produit->stock_actuel -= $ligne['quantite'];
-                        if ($produit->stock_actuel < 0) $produit->stock_actuel = 0;
-                        $produit->save();
+            // Gestion du statut 'annule' pour toutes les lignes
+            if ($nouveau_statut === 'annule') {
+                foreach ($vente->lignesVente as $ligne) {
+                    // Remettre le stock si la vente était payee
+                    if ($ancien_statut === 'payee') {
+                        $package = ProduitPackage::find($ligne->package_id);
+                       
+                        if ($package) {
+                            $package->stock_actuel += $ligne->quantite;
+                            $package->save();
+                        }
                     }
+                    $ligne->statut = 'annule';
+                    $ligne->save();
                 }
             }
 
             // Mise à jour des lignes si fournies
             if ($request->has('lignes')) {
-                $vente->lignesVente()->delete();
                 $total = 0;
+
                 foreach ($request->lignes as $ligne) {
-                    LigneVente::create([
-                        'vente_id' => $vente->id,
-                        'produit_id' => $ligne['produit_id'],
-                        'quantite' => $ligne['quantite'],
-                        'prix_unitaire' => $ligne['prix_unitaire'],
-                    ]);
-                    $total += $ligne['quantite'] * $ligne['prix_unitaire'];
+                    $package = ProduitPackage::find($ligne['package_id']);
+                    if (!$package) continue;
+
+                    $montant_ligne = $ligne['quantite'] * $package->prix;
+
+                    // Vérifier si une ligne existante
+                    $ligne_existante = $vente->lignesVente->where('package_id', $package->id)->first();
+                    if ($ligne_existante) {
+                        $ligne_existante->quantite = $ligne['quantite'];
+                        $ligne_existante->prix_unitaire = $package->prix;
+                        $ligne_existante->montant_ligne = $montant_ligne;
+                        $ligne_existante->statut = $nouveau_statut === 'annule' ? 'annule' : 'active';
+                        $ligne_existante->save();
+                    } else {
+                        LigneVente::create([
+                            'vente_id' => $vente->id,
+                            'produit_id' => $package->produit_id,
+                            'package_id' => $package->id,
+                            'quantite' => $ligne['quantite'],
+                            'prix_unitaire' => $package->prix,
+                            'montant_ligne' => $montant_ligne,
+                            'statut' => $nouveau_statut === 'annule' ? 'annule' : 'active',
+                        ]);
+                    }
+
+                    $total += $montant_ligne;
+
+                    // Diminuer le stock si statut payee
+                    if ($nouveau_statut === 'payee') {
+                        $package->stock_actuel -= $ligne['quantite'];
+                        if ($package->stock_actuel < 0) $package->stock_actuel = 0;
+                        $package->save();
+                    }
                 }
+
                 $vente->total = $total;
             }
 
+            // Mise à jour du reste de la vente
             $vente->update($request->only(['client_id', 'date_vente', 'statut', 'total']));
 
             $vente = Vente::with(['client', 'lignesVente'])->find($vente->id);
@@ -172,6 +239,7 @@ class VenteController extends Controller
             return response()->json(['message' => 'Erreur serveur', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function destroy(string $hashid)
     {

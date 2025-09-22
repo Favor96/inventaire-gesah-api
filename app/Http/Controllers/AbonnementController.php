@@ -22,8 +22,9 @@ class AbonnementController extends Controller
     public function store(Request $request)
     {
         try {
+            $user = $request->user(); // Utilisateur connecté
+
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'required|exists:entreprises,id',
                 'plan_id' => 'required|exists:plan_abonnements,id',
                 'montant_mensuel' => 'required|numeric|min:0',
                 'date_debut' => 'required|date',
@@ -39,7 +40,11 @@ class AbonnementController extends Controller
                 ], 422);
             }
 
-            $abonnement = Abonnement::create($request->all());
+            // Ajouter l'entreprise_id depuis l'utilisateur connecté
+            $data = $request->all();
+            $data['entreprise_id'] = $user->entreprise->id;
+
+            $abonnement = Abonnement::create($data);
             $abonnement = Abonnement::with(['entreprise', 'plan'])->find($abonnement->id);
 
             return response()->json(['message' => 'Abonnement créé avec succès', 'abonnement' => $abonnement], 201);
@@ -77,7 +82,6 @@ class AbonnementController extends Controller
             $id = $ids[0];
 
             $validator = Validator::make($request->all(), [
-                'entreprise_id' => 'sometimes|required|exists:entreprises,id',
                 'plan_id' => 'sometimes|required|exists:plan_abonnements,id',
                 'montant_mensuel' => 'sometimes|required|numeric|min:0',
                 'date_debut' => 'sometimes|required|date',
@@ -98,7 +102,12 @@ class AbonnementController extends Controller
                 return response()->json(['message' => 'Abonnement non trouvé'], 404);
             }
 
-            $abonnement->update($request->all());
+            // Forcer entreprise_id depuis l'utilisateur connecté
+            $user = $request->user();
+            $data = $request->all();
+            $data['entreprise_id'] = $user->entreprise->id;
+
+            $abonnement->update($data);
             $abonnement = Abonnement::with(['entreprise', 'plan'])->find($abonnement->id);
 
             return response()->json(['message' => 'Abonnement mis à jour', 'abonnement' => $abonnement], 200);

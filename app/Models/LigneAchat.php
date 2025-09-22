@@ -12,7 +12,7 @@ class LigneAchat extends Model
 
     protected $fillable = [
         'achat_id',
-        'produit_id',
+        'package_id',
         'quantite',
         'prix_unitaire',
         'montant_ligne',
@@ -34,8 +34,8 @@ class LigneAchat extends Model
         return $this->belongsTo(Achat::class, 'achat_id');
     }
 
-    public function produit()
+    public function package()
     {
-        return $this->belongsTo(Produit::class);
+        return $this->belongsTo(ProduitPackage::class, 'package_id');
     }
 }

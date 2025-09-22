@@ -42,8 +42,8 @@ class InventaireAchat extends Model
         return $this->belongsTo(Agent::class);
     }
 
-    public function achats()
-    {
-        return $this->hasMany(Achat::class, 'inventaire_achat_id');
-    }
+    // public function achats()
+    // {
+    //     return $this->hasMany(Achat::class, 'inventaire_achat_id');
+    // }
 }

@@ -51,7 +51,7 @@ class InventaireStockController extends Controller
                     'errors'  => $validator->errors()
                 ], 422);
             }
-
+dd(auth()->user()->agent);
             $inventaire = InventaireStock::create([
                 'entreprise_id'     => $request->entreprise_id,
                 'agent_id'          => auth()->user()->agent->id,

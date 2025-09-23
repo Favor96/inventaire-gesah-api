@@ -15,7 +15,7 @@ class InventaireStockController extends Controller
     public function index()
     {
         try {
-            $inventaires = InventaireStock::with(['entreprise', 'agent', 'lignes.produit'])
+            $inventaires = InventaireStock::with(['entreprise', 'agent', 'lignes.produitPackage'])
                 ->latest()
                 ->get();
 
@@ -29,6 +29,27 @@ class InventaireStockController extends Controller
     }
 
     /**
+     * Générer un numéro d’inventaire unique
+     */
+    private function generateNumeroInventaire(): string
+    {
+        $prefix = 'INV-' . date('Y-m') . '-';
+
+        // Récupérer le dernier inventaire de ce mois
+        $lastInventaire = InventaireStock::where('numero_inventaire', 'like', $prefix . '%')
+            ->orderByDesc('id')
+            ->first();
+
+        $lastNumber = 0;
+        if ($lastInventaire) {
+            $parts = explode('-', $lastInventaire->numero_inventaire);
+            $lastNumber = intval(end($parts));
+        }
+
+        return $prefix . str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Créer un nouvel inventaire avec ses lignes
      */
     public function store(Request $request)
@@ -36,11 +57,10 @@ class InventaireStockController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'entreprise_id' => 'required|exists:entreprises,id',
-                'numero_inventaire' => 'required|string|max:50|unique:inventaire_stocks,numero_inventaire',
                 'date_inventaire' => 'required|date',
-                'statut' => 'required|string|max:50',
+                'statut' => 'required|in:en_cours,valide,annule',
                 'lignes' => 'required|array|min:1',
-                'lignes.*.produit_id' => 'required|exists:produits,id',
+                'lignes.*.produit_package_id' => 'required|exists:produit_packages,id',
                 'lignes.*.quantite_reelle' => 'required|integer|min:0',
                 'lignes.*.observations' => 'nullable|string|max:255',
             ]);
@@ -51,26 +71,28 @@ class InventaireStockController extends Controller
                     'errors'  => $validator->errors()
                 ], 422);
             }
-dd(auth()->user()->agent);
+
+            $numeroInventaire = $this->generateNumeroInventaire();
+
             $inventaire = InventaireStock::create([
                 'entreprise_id'     => $request->entreprise_id,
                 'agent_id'          => auth()->user()->agent->id,
-                'numero_inventaire' => $request->numero_inventaire,
+                'numero_inventaire' => $numeroInventaire,
                 'date_inventaire'   => $request->date_inventaire,
                 'statut'            => $request->statut,
             ]);
 
             foreach ($request->lignes as $ligne) {
                 $inventaire->lignes()->create([
-                    'produit_id'      => $ligne['produit_id'],
-                    'quantite_reelle' => $ligne['quantite_reelle'],
-                    'observations'    => $ligne['observations'] ?? null,
+                    'produit_package_id' => $ligne['produit_package_id'],
+                    'quantite_reelle'    => $ligne['quantite_reelle'],
+                    'observations'       => $ligne['observations'] ?? null,
                 ]);
             }
 
             return response()->json([
                 'message'    => 'Inventaire créé avec succès',
-                'inventaire' => $inventaire->load(['lignes.produit'])
+                'inventaire' => $inventaire->load(['lignes.produitPackage'])
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -92,7 +114,7 @@ dd(auth()->user()->agent);
             }
             $id = $ids[0];
 
-            $inventaire = InventaireStock::with(['entreprise', 'agent', 'lignes.produit'])->find($id);
+            $inventaire = InventaireStock::with(['entreprise', 'agent', 'lignes.produitPackage'])->find($id);
 
             if (!$inventaire) {
                 return response()->json(['message' => 'Inventaire non trouvé'], 404);
@@ -125,10 +147,10 @@ dd(auth()->user()->agent);
             }
 
             $validator = Validator::make($request->all(), [
-                'statut' => 'sometimes|required|string|max:50',
+                'statut' => 'sometimes|required|in:en_cours,valide,annule',
                 'date_validation' => 'nullable|date',
                 'lignes' => 'nullable|array|min:1',
-                'lignes.*.produit_id' => 'required_with:lignes|exists:produits,id',
+                'lignes.*.produit_package_id' => 'required_with:lignes|exists:produit_packages,id',
                 'lignes.*.quantite_reelle' => 'required_with:lignes|integer|min:0',
                 'lignes.*.observations' => 'nullable|string|max:255',
             ]);
@@ -146,16 +168,16 @@ dd(auth()->user()->agent);
                 $inventaire->lignes()->delete(); // on remplace toutes les lignes
                 foreach ($request->lignes as $ligne) {
                     $inventaire->lignes()->create([
-                        'produit_id'      => $ligne['produit_id'],
-                        'quantite_reelle' => $ligne['quantite_reelle'],
-                        'observations'    => $ligne['observations'] ?? null,
+                        'produit_package_id' => $ligne['produit_package_id'],
+                        'quantite_reelle'    => $ligne['quantite_reelle'],
+                        'observations'       => $ligne['observations'] ?? null,
                     ]);
                 }
             }
 
             return response()->json([
                 'message'    => 'Inventaire mis à jour',
-                'inventaire' => $inventaire->load(['lignes.produit'])
+                'inventaire' => $inventaire->load(['lignes.produitPackage'])
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

@@ -12,7 +12,7 @@ class LigneInventaireStock extends Model
 
     protected $fillable = [
         'inventaire_id',
-        'produit_id',
+        'produit_package_id',
         'quantite_theorique',
         'quantite_reelle',
         'ecart',
@@ -36,27 +36,27 @@ class LigneInventaireStock extends Model
         return $this->belongsTo(InventaireStock::class, 'inventaire_id');
     }
 
-    public function produit()
+    public function produitPackage()
     {
-        return $this->belongsTo(Produit::class);
+        return $this->belongsTo(ProduitPackage::class, 'produit_package_id');
     }
+
 
     protected static function booted()
     {
         static::saving(function ($ligne) {
-            if ($ligne->produit) {
-                // quantité théorique = stock actuel du produit
-                $quantiteTheorique = $ligne->produit->stock_actuel;
+            if ($ligne->produitPackage) {
+                $quantiteTheorique = $ligne->produitPackage->stock_actuel;
 
-                // calcul de l’écart
                 if (!is_null($ligne->quantite_reelle)) {
                     $ligne->ecart = $ligne->quantite_reelle - $quantiteTheorique;
                 }
 
-                // calcul de la valeur de l’écart
                 if (!is_null($ligne->ecart)) {
-                    $ligne->valeur_ecart = $ligne->ecart * $ligne->produit->prix_unitaire;
+                    $ligne->valeur_ecart = $ligne->ecart * $ligne->produitPackage->prix;
                 }
+
+                $ligne->quantite_theorique = $quantiteTheorique;
             }
         });
     }

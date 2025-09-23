@@ -51,4 +51,10 @@ class InventaireCaisse extends Model
     {
         return $this->belongsTo(Caisse::class);
     }
+
+    // Dans App\Models\InventaireCaisse.php
+    public function lignes()
+    {
+        return $this->hasMany(LigneInventaireCaisse::class, 'inventaire_id');
+    }
 }
